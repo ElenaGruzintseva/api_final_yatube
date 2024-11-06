@@ -1,11 +1,12 @@
-from rest_framework import serializers
+from rest_framework.serializers import (CurrentUserDefault, ValidationError,
+                                        ModelSerializer, SlugRelatedField)
 from rest_framework.validators import UniqueTogetherValidator
 
 from posts.models import Comment, Follow, Group, Post, User
 
 
-class PostSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(
+class PostSerializer(ModelSerializer):
+    author = SlugRelatedField(
         slug_field='username',
         read_only=True
     )
@@ -15,8 +16,8 @@ class PostSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(
+class CommentSerializer(ModelSerializer):
+    author = SlugRelatedField(
         slug_field='username',
         read_only=True
     )
@@ -27,13 +28,13 @@ class CommentSerializer(serializers.ModelSerializer):
         read_only_fields = ('post',)
 
 
-class FollowSerializer(serializers.ModelSerializer):
-    user = serializers.SlugRelatedField(
+class FollowSerializer(ModelSerializer):
+    user = SlugRelatedField(
         slug_field='username',
-        default=serializers.CurrentUserDefault(),
+        default=CurrentUserDefault(),
         read_only=True,
     )
-    following = serializers.SlugRelatedField(
+    following = SlugRelatedField(
         slug_field='username',
         queryset=User.objects.all(),
     )
@@ -41,20 +42,20 @@ class FollowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follow
         fields = '__all__'
-        validators = [
+        validators = (
             UniqueTogetherValidator(
                 queryset=Follow.objects.all(),
                 fields=('user', 'following')
-            )
-        ]
+            ),
+        )
 
-    def validate(self, attrs):
-        if self.context['request'].user == attrs['following']:
-            raise serializers.ValidationError('подписка запрещена')
-        return attrs
+    def validate_following(self, value):
+        if self.context.get('request').user == value:
+            raise ValidationError('Cannot follow oneself')
+        return value
 
 
-class GroupSerializer(serializers.ModelSerializer):
+class GroupSerializer(ModelSerializer):
 
     class Meta:
         model = Group

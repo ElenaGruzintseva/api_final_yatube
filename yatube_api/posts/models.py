@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import F, Q
 
 User = get_user_model()
 
@@ -10,7 +11,7 @@ class Group(models.Model):
     description = models.TextField()
 
     def __str__(self):
-        return self.title[:36]
+        return self.title[:20]
 
 
 class Post(models.Model):
@@ -26,7 +27,10 @@ class Post(models.Model):
     )
 
     def __str__(self):
-        return self.text
+        return self.text[:20]
+
+    class Meta:
+        ordering = ('pub_date',)
 
 
 class Comment(models.Model):
@@ -39,25 +43,28 @@ class Comment(models.Model):
         'Дата добавления', auto_now_add=True, db_index=True)
 
     def __str__(self):
-        return self.text
+        return self.text[:20]
 
 
 class Follow(models.Model):
     user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='follow'
+        User, on_delete=models.CASCADE, related_name='follow'
     )
     following = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='following'
+        User, on_delete=models.CASCADE, related_name='following'
     )
 
+    def __str__(self):
+        return f'{self.user} follows {self.following}'
+
     class Meta:
-        constraints = [
+        constraints = (
             models.UniqueConstraint(
                 fields=['user', 'following'],
                 name='unique_subs'
-            )
-        ]
+            ),
+            models.CheckConstraint(
+                check=~Q(user=F('following')),
+                name='cannot_follow_oneself'
+            ),
+        )
