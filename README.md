@@ -43,8 +43,8 @@ python3 manage.py migrate
 
 Запустите проект:
 ```
-```python3 manage.py runserver
-
+python3 manage.py runserver
+```
 
 Здесь доступна документация для API Yatube: http://127.0.0.1:8000/redoc/
 
